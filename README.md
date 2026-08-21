@@ -99,6 +99,8 @@ Digital Hostel Pass
 - GitHub
 - VS Code / IntelliJ IDEA
 
+```text
+
 Project Structure
 
 NIVAS/
