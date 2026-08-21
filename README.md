@@ -85,7 +85,7 @@ Digital Hostel Pass
 - Object-Oriented Programming
 
 ### Database
-- PostgreSQL / MySQL
+- MySQL
 
 ### Payment Integration
 - Razorpay API
