@@ -4,6 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import model.*;
+import server.config.EnvConfig;
+import server.exception.*;
+import server.security.RateLimiter;
+import server.security.RateLimiter.RateLimitResult;
 import service.*;
 
 import java.io.ByteArrayOutputStream;
@@ -12,10 +16,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class NivasHttpServer {
     private static final int PORT = 8080;
+    private static final int MAX_BODY_SIZE = 1_048_576; // 1 MB payload protection
+
     private static DataStore dataStore = DataStore.getInstance();
     private static AuthenticationService authService = new AuthenticationService();
     private static RoomService roomService = new RoomService();
@@ -26,8 +33,11 @@ public class NivasHttpServer {
     private static AssistanceService assistanceService = new AssistanceService();
     private static AnnouncementService announcementService = new AnnouncementService();
 
+    private static RateLimiter rateLimiter = new RateLimiter();
+
     public static void main(String[] args) throws IOException {
-        startServer(PORT);
+        int port = EnvConfig.getInt("SERVER_PORT", PORT);
+        startServer(port);
     }
 
     public static HttpServer startServer(int port) throws IOException {
@@ -38,6 +48,7 @@ public class NivasHttpServer {
         System.out.println("=================================================");
         System.out.println("   NIVAS HTTP API Server running on port " + port);
         System.out.println("   API Root: http://localhost:" + port + "/api");
+        System.out.println("   Rate Limiter: " + (rateLimiter.isEnabled() ? "ACTIVE (" + rateLimiter.getGlobalLimit() + " req/min global, " + rateLimiter.getAuthLimit() + " req/min auth)" : "DISABLED"));
         System.out.println("=================================================");
         return server;
     }
@@ -60,11 +71,19 @@ public class NivasHttpServer {
             String query = exchange.getRequestURI().getQuery();
             Map<String, String> queryParams = parseQueryParams(query);
             String method = exchange.getRequestMethod();
+            String clientIp = getClientIp(exchange);
 
             String responseJson = "{}";
             int statusCode = 200;
 
             try {
+                // Rate Limiter Enforcement
+                boolean isAuthEndpoint = path.equals("/api/auth/login") || path.equals("/api/auth/verify-otp");
+                RateLimitResult rl = rateLimiter.checkRateLimit(clientIp, isAuthEndpoint);
+                exchange.getResponseHeaders().set("X-RateLimit-Limit", String.valueOf(rl.limit));
+                exchange.getResponseHeaders().set("X-RateLimit-Remaining", String.valueOf(rl.remaining));
+                exchange.getResponseHeaders().set("X-RateLimit-Reset", String.valueOf(rl.resetSeconds));
+
                 String requestBody = readBody(exchange.getRequestBody());
                 Map<String, String> bodyMap = parseSimpleJson(requestBody);
 
@@ -429,12 +448,24 @@ public class NivasHttpServer {
                             "\"laundryRequests\":" + serializeLaundry(dataStore.getLaundryRequests()) +
                             "}";
                 } else {
-                    statusCode = 404;
-                    responseJson = "{\"success\":false,\"message\":\"Endpoint not found: " + escape(path) + "\"}";
+                    throw new ResourceNotFoundException("Endpoint not found: " + path);
                 }
+            } catch (RateLimitException ex) {
+                statusCode = ex.getStatusCode();
+                exchange.getResponseHeaders().set("Retry-After", String.valueOf(ex.getRetryAfterSeconds()));
+                responseJson = buildErrorJson(statusCode, ex.getErrorCode(), ex.getMessage(), path);
+                System.err.println("⚠️ [429] Rate limit exceeded for IP: " + ex.getClientIp() + " on " + path);
+            } catch (ApiException ex) {
+                statusCode = ex.getStatusCode();
+                responseJson = buildErrorJson(statusCode, ex.getErrorCode(), ex.getMessage(), path);
+                System.err.println("⚠️ [" + statusCode + "] " + ex.getErrorCode() + " on " + path + ": " + ex.getMessage());
+            } catch (IllegalArgumentException ex) {
+                statusCode = 400;
+                responseJson = buildErrorJson(400, "BAD_REQUEST", "Invalid input or parameter: " + ex.getMessage(), path);
+                System.err.println("⚠️ [400] Bad Request on " + path + ": " + ex.getMessage());
             } catch (Exception ex) {
                 statusCode = 500;
-                responseJson = "{\"success\":false,\"error\":\"" + escape(ex.getMessage() != null ? ex.getMessage() : ex.toString()) + "\"}";
+                responseJson = buildErrorJson(500, "INTERNAL_SERVER_ERROR", "Internal server error: " + (ex.getMessage() != null ? ex.getMessage() : ex.toString()), path);
                 ex.printStackTrace();
             }
 
@@ -757,14 +788,45 @@ public class NivasHttpServer {
                 .replace("\t", "\\t");
     }
 
-    private static String readBody(InputStream is) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = is.read(buffer)) != -1) {
-            baos.write(buffer, 0, len);
+    private static String buildErrorJson(int status, String errorCode, String message, String path) {
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date());
+        return "{" +
+                "\"success\":false," +
+                "\"status\":" + status + "," +
+                "\"error\":\"" + escape(errorCode) + "\"," +
+                "\"message\":\"" + escape(message) + "\"," +
+                "\"path\":\"" + escape(path) + "\"," +
+                "\"timestamp\":\"" + timestamp + "\"" +
+                "}";
+    }
+
+    private static String getClientIp(HttpExchange exchange) {
+        String xff = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
+        if (xff != null && !xff.trim().isEmpty()) {
+            int commaIdx = xff.indexOf(",");
+            return commaIdx > 0 ? xff.substring(0, commaIdx).trim() : xff.trim();
         }
-        return baos.toString(StandardCharsets.UTF_8);
+        if (exchange.getRemoteAddress() != null && exchange.getRemoteAddress().getAddress() != null) {
+            return exchange.getRemoteAddress().getAddress().getHostAddress();
+        }
+        return "127.0.0.1";
+    }
+
+    private static String readBody(InputStream is) throws IOException {
+        if (is == null) return "";
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int len;
+            int total = 0;
+            while ((len = is.read(buffer)) != -1) {
+                total += len;
+                if (total > MAX_BODY_SIZE) {
+                    throw new ValidationException("Payload size exceeds maximum allowed limit of 1MB.");
+                }
+                baos.write(buffer, 0, len);
+            }
+            return baos.toString(StandardCharsets.UTF_8);
+        }
     }
 
     private static Map<String, String> parseQueryParams(String query) {
