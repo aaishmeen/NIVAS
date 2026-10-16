@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-public class Main {
-    
-=======
 import model.*;
 import service.*;
 
@@ -737,5 +733,4 @@ public class Main {
             }
         }
     }
->>>>>>> f38f30e (Implement NIVAS core OOP modules, services, and interactive CLI)
 }

@@ -76,8 +76,12 @@ public class DataStore {
         messPlans.add(premium);
         messPlans.add(veg);
 
-        announcements.add(new Announcement("ANN01", "Hostel Verification Week", "All 2nd year students must complete document verification by Friday.", "2026-09-25", "Chief Warden"));
-        announcements.add(new Announcement("ANN02", "Laundry Service Timings", "Laundry pickup is available daily between 8:00 AM and 11:00 AM.", "2026-09-26", "Hostel Office"));
+        announcements.add(new Announcement("ANN01", "Hostel Verification Week", "All 2nd year students must complete document verification by Friday.", "2026-09-25", "Chief Warden", "STUDENT"));
+        announcements.add(new Announcement("ANN02", "Hostel Block Inspection & Key Audit", "All Block Wardens must complete floor room inventory check and report vacant beds by 6 PM.", "2026-09-26", "Chief Warden", "STAFF"));
+        announcements.add(new Announcement("ANN03", "Laundry Service Timings & Pickup Window", "Laundry pickup is available daily between 8:00 AM and 11:00 AM at ground floor counters.", "2026-09-26", "Hostel Office", "STUDENT"));
+        announcements.add(new Announcement("ANN04", "Maintenance Team Duty Roster Update", "Staff shift rotation for Block A and Block B electrical repairs has been updated for this week.", "2026-09-27", "Hostel Supervisor", "STAFF"));
+        announcements.add(new Announcement("ANN05", "Executive Council Hostel Review", "Quarterly budget settlement and occupancy reconciliation are scheduled for Monday 10 AM.", "2026-09-28", "Registrar Office", "ADMIN"));
+        announcements.add(new Announcement("ANN06", "Campus High-Speed Wi-Fi Maintenance", "Scheduled maintenance on central Wi-Fi backbone routers on Sunday from 2 AM to 4 AM.", "2026-09-28", "IT Services", "ALL"));
 
         Ticket t1 = new Ticket("TCK101", "MUJ12345", "Plumbing", "Minor tap leakage in washroom", "2026-09-27");
         tickets.add(t1);
