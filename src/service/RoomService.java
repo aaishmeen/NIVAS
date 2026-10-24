@@ -72,6 +72,7 @@ public class RoomService {
         student.setAllocatedRoom(targetRoom.getRoomNumber());
         student.setAllocatedBed(targetBed.getBedCode());
         student.getOnboardingApp().setRoomBedSelected(true);
+        dataStore.persistBedAllocation(targetRoom.getRoomNumber(), targetBed.getBedCode(), true, student.getStudentId());
 
         System.out.println("Success: Bed " + targetBed.getBedCode() + " in Room " + targetRoom.getRoomNumber() + " successfully allocated to " + student.getName() + ".");
         return true;
@@ -79,13 +80,16 @@ public class RoomService {
 
     public void deallocateBed(Student student) {
         if (student.getAllocatedRoom() != null) {
-            Room r = dataStore.findRoomByNumber(student.getAllocatedRoom());
-            if (r != null && student.getAllocatedBed() != null) {
-                Bed b = r.findBed(student.getAllocatedBed());
+            String prevRoom = student.getAllocatedRoom();
+            String prevBed = student.getAllocatedBed();
+            Room r = dataStore.findRoomByNumber(prevRoom);
+            if (r != null && prevBed != null) {
+                Bed b = r.findBed(prevBed);
                 if (b != null) {
                     b.deallocate();
                 }
             }
+            dataStore.persistBedAllocation(prevRoom, prevBed, false, null);
             student.setAllocatedRoom(null);
             student.setAllocatedBed(null);
             student.getOnboardingApp().setRoomBedSelected(false);

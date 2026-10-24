@@ -50,19 +50,53 @@ NIVAS is an Academic Java OOP Mini Project designed at a 2nd-year B.Tech CSE lev
 
 ---
 
-## 4. How to Compile and Run
+## 4. PostgreSQL Database & Environment Configuration
 
-### Compile All Classes
+NIVAS connects directly to a PostgreSQL database (`nivas_db`) using the bundled official PostgreSQL JDBC Driver (`lib/postgresql-42.7.4.jar`).
+
+### Environment File (`.env`)
+Copy `.env.example` to `.env` (or edit the created `.env` file) and specify your local PostgreSQL password:
+
+```properties
+# PostgreSQL Database Configuration
+DB_ENABLED=true
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=nivas_db
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password_here
+DB_AUTO_INIT=true
+```
+
+- When `DB_AUTO_INIT=true`, the server automatically creates the `nivas_db` database if it doesn't exist and applies [schema.sql](file:///c:/Users/vedpm/OneDrive/Documents/Desktop/NIVAS/New%20folder/NIVASSS/NIVAS/database/schema.sql) and [seed.sql](file:///c:/Users/vedpm/OneDrive/Documents/Desktop/NIVAS/New%20folder/NIVASSS/NIVAS/database/seed.sql).
+- If the database is unreachable or credentials are empty, NIVAS gracefully falls back to the in-memory store so testing and UI development are never blocked.
+
+---
+
+## 5. How to Compile and Run
+
+### Compile All Classes (including PostgreSQL JDBC Driver)
 ```bash
-javac -d bin src/model/*.java src/service/*.java src/Main.java src/TestRunner.java
+javac -cp "lib/*" -d bin src/model/*.java src/db/*.java src/server/config/*.java src/server/exception/*.java src/server/security/*.java src/service/*.java src/server/*.java src/Main.java src/TestRunner.java
 ```
 
 ### Run the Interactive Console Application
 ```bash
-java -cp bin Main
+java -cp "bin;lib/*" Main
 ```
 
 ### Run the Automated Test Suite (Phases 1–9)
 ```bash
-java -cp bin TestRunner
+java -cp "bin;lib/*" TestRunner
+```
+
+### Run the HTTP API Server (Port 8085)
+```bash
+java -cp "bin;lib/*" server.NivasHttpServer
+```
+
+### Run the Frontend Portal (Vite Dev Server)
+```bash
+cd frontend
+npm run dev
 ```

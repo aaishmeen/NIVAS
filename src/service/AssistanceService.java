@@ -21,6 +21,7 @@ public class AssistanceService {
 
         AssistanceRequest request = new AssistanceRequest(id, studentId, type, details, time);
         dataStore.getAssistanceRequests().add(request);
+        dataStore.persistAssistanceRequest(request);
         System.out.println("Success: Assistance request " + id + " [" + type + "] registered.");
         return request;
     }
@@ -46,6 +47,7 @@ public class AssistanceService {
                 if (staffId != null && !staffId.isEmpty()) {
                     ar.setAssignedStaffId(staffId);
                 }
+                dataStore.persistAssistanceRequest(ar);
                 System.out.println("Assistance Request " + requestId + " updated to " + newStatus.toUpperCase());
                 return true;
             }

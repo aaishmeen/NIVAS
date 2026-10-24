@@ -21,6 +21,7 @@ public class TicketService {
 
         Ticket ticket = new Ticket(id, studentId, category, description, date);
         dataStore.getTickets().add(ticket);
+        dataStore.persistTicket(ticket);
         System.out.println("Success: Ticket " + id + " created with status SUBMITTED.");
         return ticket;
     }
@@ -54,6 +55,7 @@ public class TicketService {
             if (t.getTicketId().equalsIgnoreCase(ticketId)) {
                 t.setAssignedToStaffId(staffId);
                 t.setStatus("ASSIGNED");
+                dataStore.persistTicket(t);
                 System.out.println("Ticket " + ticketId + " assigned to staff " + staffId + " (Status: ASSIGNED).");
                 return true;
             }
@@ -69,6 +71,7 @@ public class TicketService {
                 if (notes != null && !notes.trim().isEmpty()) {
                     t.setResolutionNotes(notes);
                 }
+                dataStore.persistTicket(t);
                 System.out.println("Ticket " + ticketId + " updated to " + newStatus.toUpperCase());
                 return true;
             }

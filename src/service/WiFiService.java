@@ -17,6 +17,7 @@ public class WiFiService {
         WiFiAccount account = student.getWifiAccount();
         if (account != null) {
             account.recordUsage(additionalGB);
+            DataStore.getInstance().updateStudentWifi(student.getStudentId(), account.getUsedGB());
             System.out.println("Recorded " + additionalGB + " GB of usage.");
             account.displayAccount();
         }

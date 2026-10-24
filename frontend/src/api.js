@@ -19,7 +19,7 @@ async function request(endpoint, options = {}) {
     if (!contentType.includes('application/json')) {
       const text = await response.text();
       if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-        throw new Error('NIVAS Java backend server is offline or unreachable on port 8080. Please start the Java backend: "java -cp bin server.NivasHttpServer"');
+        throw new Error('NIVAS Java backend server is offline or unreachable on port 8085. Please start the Java backend: "java -cp \"bin;lib/*\" server.NivasHttpServer"');
       }
       throw new Error(`Server returned unexpected response (${response.status}): ${text.substring(0, 100)}`);
     }
@@ -32,7 +32,7 @@ async function request(endpoint, options = {}) {
   } catch (error) {
     console.error(`API Error on ${endpoint}:`, error);
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      throw new Error('Cannot connect to NIVAS backend server. Please ensure the Java server is running on port 8080.');
+      throw new Error('Cannot connect to NIVAS backend server. Please ensure the Java server is running on port 8085.');
     }
     throw error;
   }

@@ -28,6 +28,7 @@ public class OnboardingService {
         pd.setGuardianPhone(guardianPhone);
 
         student.getOnboardingApp().setPersonalDetailsCompleted(true);
+        dataStore.persistStudent(student);
         System.out.println("Personal details updated successfully.");
     }
 
@@ -36,12 +37,14 @@ public class OnboardingService {
         doc.setDocumentNumber(mockAadhaarNumber);
         doc.setSubmitted(true);
         student.getOnboardingApp().setDocumentsSubmitted(true);
+        dataStore.persistStudent(student);
         System.out.println("Mock Aadhaar uploaded successfully.");
     }
 
     public void acceptUndertaking(Student student) {
         student.getDocument().setUndertakingAccepted(true);
         student.getOnboardingApp().setUndertakingAccepted(true);
+        dataStore.persistStudent(student);
         System.out.println("Hostel rules & regulations undertaking accepted.");
     }
 
@@ -61,6 +64,7 @@ public class OnboardingService {
         p.setTransactionRef(txn);
 
         student.getOnboardingApp().setFeePaid(true);
+        dataStore.persistStudent(student);
 
         System.out.println("Payment Successful via Razorpay Test Simulation.");
         p.displayPayment();
@@ -69,6 +73,7 @@ public class OnboardingService {
 
     public void adminVerifyStudent(Student student) {
         student.getOnboardingApp().setAdminVerified(true);
+        dataStore.persistStudent(student);
         System.out.println("Student " + student.getName() + " (" + student.getStudentId() + ") has been verified by Administrator.");
     }
 
@@ -80,6 +85,7 @@ public class OnboardingService {
         }
         student.setMessPlan(selected);
         student.getOnboardingApp().setMessSelected(true);
+        dataStore.persistStudent(student);
         System.out.println("Mess plan " + selected.getPlanName() + " selected successfully.");
         return true;
     }
@@ -87,6 +93,7 @@ public class OnboardingService {
     public void activateLaundryPlan(Student student) {
         student.getLaundryPlan().setStatus("ACTIVE");
         student.getOnboardingApp().setLaundryPlanActivated(true);
+        dataStore.persistStudent(student);
         System.out.println("30-Cycle laundry plan activated for " + student.getName() + ".");
     }
 
@@ -119,6 +126,7 @@ public class OnboardingService {
 
         student.setHostelPass(pass);
         app.setHostelPassGenerated(true);
+        dataStore.persistStudent(student);
 
         System.out.println("Hostel Pass generated successfully!");
         pass.displayPass();

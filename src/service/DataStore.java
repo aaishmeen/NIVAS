@@ -1,7 +1,10 @@
 package service;
 
+import db.PostgresRepository;
 import model.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataStore {
     private static DataStore instance;
@@ -14,6 +17,8 @@ public class DataStore {
     private ArrayList<LaundryRequest> laundryRequests;
     private ArrayList<Announcement> announcements;
 
+    private PostgresRepository repository;
+
     private DataStore() {
         users = new ArrayList<>();
         rooms = new ArrayList<>();
@@ -22,17 +27,74 @@ public class DataStore {
         assistanceRequests = new ArrayList<>();
         laundryRequests = new ArrayList<>();
         announcements = new ArrayList<>();
-        initializeData();
+
+        repository = PostgresRepository.getInstance();
+        loadData();
     }
 
-    public static DataStore getInstance() {
+    public static synchronized DataStore getInstance() {
         if (instance == null) {
             instance = new DataStore();
         }
         return instance;
     }
 
+    private void loadData() {
+        boolean dbReady = repository.init();
+        if (dbReady) {
+            System.out.println("[DataStore] Loading domain data from PostgreSQL...");
+            messPlans = repository.loadMessPlans();
+            rooms = repository.loadRooms();
+
+            Map<String, MessPlan> planMap = new HashMap<>();
+            for (MessPlan mp : messPlans) {
+                planMap.put(mp.getPlanId(), mp);
+            }
+
+            users = repository.loadUsers(planMap);
+            tickets = repository.loadTickets();
+            assistanceRequests = repository.loadAssistanceRequests();
+            laundryRequests = repository.loadLaundryRequests();
+            announcements = repository.loadAnnouncements();
+
+            if (!users.isEmpty() && !rooms.isEmpty()) {
+                System.out.println("[DataStore] PostgreSQL synchronization successful: " +
+                        users.size() + " users, " + rooms.size() + " rooms, " +
+                        announcements.size() + " announcements loaded.");
+                return;
+            } else {
+                System.out.println("[DataStore] PostgreSQL tables are empty. Seeding initial domain models...");
+            }
+        }
+
+        // Fallback or Initial Seed when DB is unavailable or empty
+        initializeData();
+
+        // If DB is connected but was empty, persist the baseline data
+        if (dbReady) {
+            for (User u : users) {
+                if (u instanceof Student) {
+                    repository.saveStudent((Student) u);
+                }
+            }
+            for (Announcement a : announcements) {
+                repository.saveAnnouncement(a);
+            }
+            for (Ticket t : tickets) {
+                repository.saveTicket(t);
+            }
+        }
+    }
+
     private void initializeData() {
+        users.clear();
+        rooms.clear();
+        messPlans.clear();
+        tickets.clear();
+        assistanceRequests.clear();
+        laundryRequests.clear();
+        announcements.clear();
+
         Admin admin = new Admin("ADM01", "Dr. Rajesh Sharma", "admin@muj.ac.in", "admin123", "Chief Warden Office");
         Staff warden = new Staff("STF01", "Mr. Suresh Kumar", "suresh@muj.ac.in", "warden123", "Hostel Warden", "Block A");
         Staff caretaker = new Staff("STF02", "Mr. Ramesh Verma", "ramesh@muj.ac.in", "staff123", "Maintenance Supervisor", "Block B");
@@ -86,6 +148,72 @@ public class DataStore {
         Ticket t1 = new Ticket("TCK101", "MUJ12345", "Plumbing", "Minor tap leakage in washroom", "2026-09-27");
         tickets.add(t1);
     }
+
+    public boolean isDatabaseConnected() {
+        return repository != null && repository.isConnected();
+    }
+
+    // =========================================================================
+    // PERSISTENCE HELPERS
+    // =========================================================================
+
+    public void persistStudent(Student s) {
+        if (repository != null && s != null) {
+            repository.saveStudent(s);
+        }
+    }
+
+    public void persistBedAllocation(String roomNumber, String bedCode, boolean occupied, String studentId) {
+        if (repository != null) {
+            repository.saveBedAllocation(roomNumber, bedCode, occupied, studentId);
+        }
+    }
+
+    public void persistLaundryRequest(LaundryRequest req) {
+        if (repository != null && req != null) {
+            repository.saveLaundryRequest(req);
+        }
+    }
+
+    public void updateLaundryRequestStatus(String reqId, String status, boolean cycleDeducted) {
+        if (repository != null) {
+            repository.updateLaundryRequestStatus(reqId, status, cycleDeducted);
+        }
+    }
+
+    public void updateStudentLaundryPlan(String studentId, int usedCycles, String status) {
+        if (repository != null) {
+            repository.updateStudentLaundryPlan(studentId, usedCycles, status);
+        }
+    }
+
+    public void updateStudentWifi(String studentId, double usedGB) {
+        if (repository != null) {
+            repository.updateStudentWifi(studentId, usedGB);
+        }
+    }
+
+    public void persistTicket(Ticket t) {
+        if (repository != null && t != null) {
+            repository.saveTicket(t);
+        }
+    }
+
+    public void persistAssistanceRequest(AssistanceRequest ar) {
+        if (repository != null && ar != null) {
+            repository.saveAssistanceRequest(ar);
+        }
+    }
+
+    public void persistAnnouncement(Announcement a) {
+        if (repository != null && a != null) {
+            repository.saveAnnouncement(a);
+        }
+    }
+
+    // =========================================================================
+    // ACCESSORS & SEARCH
+    // =========================================================================
 
     public ArrayList<User> getUsers() {
         return users;

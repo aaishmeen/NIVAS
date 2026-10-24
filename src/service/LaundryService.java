@@ -29,6 +29,7 @@ public class LaundryService {
 
         LaundryRequest req = new LaundryRequest(reqId, student.getStudentId(), numberOfClothes, dateStr);
         dataStore.getLaundryRequests().add(req);
+        dataStore.persistLaundryRequest(req);
 
         System.out.println("Success: Laundry pickup request " + reqId + " submitted for " + numberOfClothes + " clothes.");
         return req;
@@ -57,9 +58,11 @@ public class LaundryService {
                     if (s != null) {
                         s.getLaundryPlan().consumeCycle();
                         req.setCycleDeducted(true);
+                        dataStore.updateStudentLaundryPlan(s.getStudentId(), s.getLaundryPlan().getUsedCycles(), s.getLaundryPlan().getStatus());
                         System.out.println("Cycle deducted for student " + s.getName() + ". Remaining: " + s.getLaundryPlan().getRemainingCycles());
                     }
                 }
+                dataStore.updateLaundryRequestStatus(req.getRequestId(), req.getStatus(), req.isCycleDeducted());
                 System.out.println("Status of laundry request " + requestId + " updated to " + newStatus.toUpperCase());
                 return true;
             }

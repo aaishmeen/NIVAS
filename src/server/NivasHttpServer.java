@@ -48,6 +48,7 @@ public class NivasHttpServer {
         System.out.println("=================================================");
         System.out.println("   NIVAS HTTP API Server running on port " + port);
         System.out.println("   API Root: http://localhost:" + port + "/api");
+        System.out.println("   Database: " + (dataStore.isDatabaseConnected() ? "PostgreSQL (ONLINE: " + db.DatabaseConfig.getDbName() + ")" : "In-Memory / Offline DB Mode"));
         System.out.println("   Rate Limiter: " + (rateLimiter.isEnabled() ? "ACTIVE (" + rateLimiter.getGlobalLimit() + " req/min global, " + rateLimiter.getAuthLimit() + " req/min auth)" : "DISABLED"));
         System.out.println("=================================================");
         return server;
@@ -87,7 +88,18 @@ public class NivasHttpServer {
                 String requestBody = readBody(exchange.getRequestBody());
                 Map<String, String> bodyMap = parseSimpleJson(requestBody);
 
-                if (path.equals("/api/auth/login") && method.equals("POST")) {
+                if (path.equals("/api/health") && method.equals("GET")) {
+                    responseJson = "{\"status\":\"UP\"," +
+                            "\"database\":{" +
+                            "\"enabled\":" + db.DatabaseConfig.isDbEnabled() + "," +
+                            "\"connected\":" + dataStore.isDatabaseConnected() + "," +
+                            "\"driverAvailable\":" + db.DatabaseConfig.isDriverAvailable() + "," +
+                            "\"host\":\"" + escape(db.DatabaseConfig.getHost()) + "\"," +
+                            "\"port\":" + db.DatabaseConfig.getPort() + "," +
+                            "\"dbName\":\"" + escape(db.DatabaseConfig.getDbName()) + "\"," +
+                            "\"user\":\"" + escape(db.DatabaseConfig.getUser()) + "\"" +
+                            "}}";
+                } else if (path.equals("/api/auth/login") && method.equals("POST")) {
                     String username = bodyMap.getOrDefault("username", "");
                     String password = bodyMap.getOrDefault("password", "");
                     User user = authService.authenticateUser(username, password);

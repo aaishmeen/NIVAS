@@ -17,8 +17,16 @@ public class LaundryPlan {
         return totalCycles;
     }
 
+    public void setTotalCycles(int totalCycles) {
+        this.totalCycles = totalCycles;
+    }
+
     public int getUsedCycles() {
         return usedCycles;
+    }
+
+    public void setUsedCycles(int usedCycles) {
+        this.usedCycles = usedCycles;
     }
 
     public int getRemainingCycles() {

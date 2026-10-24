@@ -25,6 +25,7 @@ public class AnnouncementService {
 
         Announcement ann = new Announcement(id, title, message, date, author, targetAudience);
         dataStore.getAnnouncements().add(0, ann);
+        dataStore.persistAnnouncement(ann);
         System.out.println("Success: Announcement [" + title + "] for [" + ann.getTargetAudience() + "] published successfully.");
     }
 

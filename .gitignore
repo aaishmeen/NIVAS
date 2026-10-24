@@ -3,6 +3,7 @@ bin/
 *.class
 target/
 *.jar
+!lib/*.jar
 *.war
 *.ear
 

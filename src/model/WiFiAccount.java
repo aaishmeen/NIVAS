@@ -29,8 +29,16 @@ public class WiFiAccount {
         return allocatedGB;
     }
 
+    public void setAllocatedGB(double allocatedGB) {
+        this.allocatedGB = allocatedGB;
+    }
+
     public double getUsedGB() {
         return usedGB;
+    }
+
+    public void setUsedGB(double usedGB) {
+        this.usedGB = usedGB;
     }
 
     public double getRemainingGB() {
