@@ -43,6 +43,21 @@ public class NivasHttpServer {
     public static HttpServer startServer(int port) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/api", new ApiHandler());
+        server.createContext("/", exchange -> {
+            String path = exchange.getRequestURI().getPath();
+            if ("/".equals(path) || "".equals(path)) {
+                String resp = "{\"status\":\"ONLINE\",\"service\":\"NIVAS Backend API\",\"endpoints\":\"/api\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                byte[] bytes = resp.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, bytes.length);
+                exchange.getResponseBody().write(bytes);
+                exchange.close();
+            } else {
+                exchange.sendResponseHeaders(404, -1);
+                exchange.close();
+            }
+        });
         server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
         server.start();
         System.out.println("=================================================");
