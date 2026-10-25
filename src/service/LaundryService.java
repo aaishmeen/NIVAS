@@ -23,8 +23,12 @@ public class LaundryService {
             return null;
         }
 
-        requestCounter++;
-        String reqId = "LR-" + requestCounter;
+        String reqId;
+        do {
+            requestCounter++;
+            reqId = "LR-" + requestCounter;
+        } while (dataStore.findLaundryRequestById(reqId) != null);
+
         String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
 
         LaundryRequest req = new LaundryRequest(reqId, student.getStudentId(), numberOfClothes, dateStr);

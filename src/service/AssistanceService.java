@@ -15,8 +15,12 @@ public class AssistanceService {
     }
 
     public AssistanceRequest createRequest(String studentId, String type, String details) {
-        reqCounter++;
-        String id = "AST" + reqCounter;
+        String id;
+        do {
+            reqCounter++;
+            id = "AST" + reqCounter;
+        } while (dataStore.findAssistanceRequestById(id) != null);
+
         String time = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
 
         AssistanceRequest request = new AssistanceRequest(id, studentId, type, details, time);

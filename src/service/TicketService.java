@@ -15,8 +15,12 @@ public class TicketService {
     }
 
     public Ticket createTicket(String studentId, String category, String description) {
-        ticketCounter++;
-        String id = "TCK" + ticketCounter;
+        String id;
+        do {
+            ticketCounter++;
+            id = "TCK" + ticketCounter;
+        } while (dataStore.findTicketById(id) != null);
+
         String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
 
         Ticket ticket = new Ticket(id, studentId, category, description, date);

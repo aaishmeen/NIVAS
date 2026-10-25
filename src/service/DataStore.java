@@ -284,4 +284,31 @@ public class DataStore {
         }
         return null;
     }
+
+    public Ticket findTicketById(String ticketId) {
+        for (Ticket t : tickets) {
+            if (t.getTicketId().equalsIgnoreCase(ticketId)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    public LaundryRequest findLaundryRequestById(String reqId) {
+        for (LaundryRequest lr : laundryRequests) {
+            if (lr.getRequestId().equalsIgnoreCase(reqId)) {
+                return lr;
+            }
+        }
+        return null;
+    }
+
+    public AssistanceRequest findAssistanceRequestById(String reqId) {
+        for (AssistanceRequest ar : assistanceRequests) {
+            if (ar.getRequestId().equalsIgnoreCase(reqId)) {
+                return ar;
+            }
+        }
+        return null;
+    }
 }
